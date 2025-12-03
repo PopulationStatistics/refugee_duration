@@ -1,0 +1,141 @@
+---
+title: "Refugee Duration in Protracted Situations"
+author: "Giulia"
+date: '2022-06-07'
+output:
+  html_document: default
+  pdf_document: default
+---
+
+
+```{r setup, include=FALSE}
+library(readxl)
+library(dplyr)
+library(lubridate)
+library(ggplot2)
+library(survival)
+library(survminer)
+library(scales)
+library(gganimate)
+library(unhcrthemes)
+library(gridExtra)
+library(stringr)
+library(svglite)
+
+
+load("Formatted Data/syrians_in_iraq.RData")
+syrians_in_iraq <- dataset1
+load("Formatted Data/syrians_in_jordan.RData")
+syrians_in_jordan <- dataset1
+load("Formatted Data/syrians_in_egypt.RData")
+syrians_in_egypt <- dataset1
+```
+
+Protracted refugee situations are defined as those where more than 25,000 refugees from the same country of origin have been in exile in a given low- or middle-income host country for at least five consecutive years. \
+UNHCR registers and maintains registration data for refugees and asylum-seekers in a number of different countries which enables us to analyse the refugee duration for available situations and allows us to understand the complexity of refugee durations. 
+Giving a simple mean or median value for the refugee duration by using the data in our registration system can be misleading for a variety of reasons. 
+
+* The registration system only covers a proportion of all refugees; this means that the data is not complete. 
+* Each situation is different and has its own complexities which range from whether naturalisation is available in the country of asylum to the length of the conflict which might not allow repatriation. 
+* Some values might be misinterpreted. For example, a smaller value for the refugee duration does not necessarily mean that refugees stay in their country of asylum for shorter time intervals but might refer to the recentness of the conflict. 
+
+Due to these reasons we decide to focus on specific country pairs and points in time which relate to when the conflict started and therefore when refugees were registered in our system. This allows us to understand specific situations better and to have a more complete picture of a refugee duration.  
+
+For this analysis, we have extracted all refugee records for nine specific country pairs. 
+These include records which are still active, which means that the individuals are still refugees, and closed cases, which refers to records which have been deactivated due to a variety of reasons. 
+For this analysis a number of assumptions are made:
+
+* If a case is **Closed** it remains closed and it is assumed that the individual is not a refugee anymore. It is assumed that he has either returned to his country of origin, resettled, naturalized, or passed away.
+* We exclude cases where the individual was born in the refugee camp and which might have registration dates or process dates which are confounding.  
+
+Next, we have calculated the refugee duration by refugee status by using the recent date: **`r  as.Date("2021-06-07")`**. As already mentioned, there are two main types of refugee status. 
+
+* Active - In this case, we assume that the individual is still a refugee. 
+* Closed - In this case, we assume that the individual is not a refugee anymore. 
+
+As a first example we have decided to look at the refugee situations of Syrians in Egypt, Jordan, and Iraq. \
+As we can see in the bar chart below, most refugees were registered in 2013 for all three countries. 
+
+```{r bar chart Syria, echo=FALSE, message=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+
+load("Plots/barchart_registered_syrians_year.RData")
+
+suppressWarnings(registered_syrians_year)
+
+```
+
+Note that individuals were registered every year since 2013 and are still being registered today. Therefore, giving the mean or average duration would not give us a good indication of how long refugees have been displaced and how many might have resettled or returned.
+For this reason, we have decided to plot the Kaplan-Meier curve which is a figure which is commonly used in Biostatistics in survival analysis.
+
+The Kaplan-Meier estimator aims to estimate the survival function: $S(t) = P(\tau>t)$, where t is the time and $\tau$ is the event, which in our case is when a case was closed (i.e. the refugee stopped being a refugee). In short, this function basically tells us the probability of "surviving" past time t. In our case, it is the probability of the refugee duration of a refugee lasting at least t years.
+
+
+```{r KM plot, echo=FALSE}
+
+load("Plots/plot_syrians_in_iraq.RData")
+load("Plots/plot_syrians_in_egypt.RData")
+load("Plots/plot_syrians_in_jordan.RData")
+
+grid.arrange(plot_syrians_in_jordan,  plot_syrians_in_iraq,
+             plot_syrians_in_egypt, 
+             ncol = 2, nrow=2,
+             top = "Kaplan Meier plots for Syrian refugees") 
+
+```
+
+The Kaplan-Meier plot for the Syrians in Jordan, Iraq, and Egypt can be seen above.
+Note that the y-axis represents the survival refugee duration probability whereas the x-axis represents the refugee duration in years. We can easily read the values off the 5-year line which tell us that a Syrian refugee in Iraq, Jordan, or Egypt has a probability at least 67% to remain a refugee after 5 years. This decreases to around 58% after nine years and the three most frequent non-missing reasons for closed cases are:
+
+* Spontaneous Departure
+* Self-Organised Return
+* Resettlement
+
+Although these reasons might give us an indication of why the survival curve is decreasing it is important to note that in this case the majority of cases have a missing reason as this is not always recorded. \
+Furthermore, it is important to keep in mind that these are three very specific situations and do not represent the Syrian situation overall or the global refugee situation. 
+
+If we look at the four recent situations of South Sudanese refugees in Uganda, Ethiopia, Kenya, and Sudan which were registered in or after 2014/2015, depending on the country of asylum, we obtain the following Kaplan Meier plots:
+
+```{r KM plot south sudan, echo=FALSE}
+
+load("Plots/plot_south_sudanese_in_uganda.RData")
+load("Plots/plot_south_sudanese_in_ethiopia.RData")
+load("Plots/plot_south_sudanese_in_kenya.RData")
+load("Plots/plot_south_sudanese_in_sudan.RData")
+
+grid.arrange(plot_south_sudanese_in_uganda,  plot_south_sudanese_in_ethiopia,
+             plot_south_sudanese_in_kenya, plot_south_sudanese_in_sudan, 
+             ncol = 2, nrow=2,
+             top = "Kaplan Meier plots for South Sudanese refugees") 
+
+
+```
+
+These plots depict a slightly different situation. 
+The South Sudanese refugees have a much higher probability which ranges from 75% to 96% of still being a refugee after 5 years. Even after 7 or 8 years this probability does not decrease by much, indicating that this situation might not improve in the near future.
+
+Now, if we look at older situations such as Sudanese refugees in Chad which were registered in 2005, we have a wider timeframe to work with and can see how long the refugee duration can be in some cases. 
+
+```{r KM plot sudan, echo=FALSE}
+
+load("Plots/plot_sudanese_in_chad.RData")
+
+plot_sudanese_in_chad
+
+
+```
+
+
+Unfortunately, we can see that even after 16 years the probability of remaining a refugee is still at around 60%. If we look at the main registered non-missing reasons of why cases were closed, one of them is "Death", underlining the long duration of the situation and that no solutions have been found yet. \
+On the other hand, if we look at another long-lasting situation of Burundians in Tanzania that were registered between 1996 and 1997 we see a slightly more positive (still not positive obviously) situation where the probability of remaining a refugee after 24 years goes down to zero. If we look at the most frequent registered reason, including missing reasons, it is "Voluntary Repatriation" which was recorded approximately 250,000 times. This shows how even after more than 10 years the willingness and possibility of returning to their home country is still present. 
+
+
+```{r KM plot tanzania, echo=FALSE}
+
+load("Plots/plot_burundis_in_tanzania.RData")
+
+plot_burundis_in_tanzania
+
+
+```
+
